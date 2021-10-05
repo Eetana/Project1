@@ -108,11 +108,13 @@ bool Turtlebot3Drive::controlLoop()
       {
         if (scan_data_[LEFT] < check_side_dist_)
         {
+          //Turn right if there is something in front and there is something on the right
           prev_tb3_pose_ = tb3_pose_;
           turtlebot3_state_num = TB3_RIGHT_TURN;
         }
         else if (scan_data_[RIGHT] < check_side_dist_)
         {
+          //Turn left if there is nothing in front, and if there is nothing on the left
           prev_tb3_pose_ = tb3_pose_;
           turtlebot3_state_num = TB3_LEFT_TURN;
         }
@@ -133,14 +135,14 @@ bool Turtlebot3Drive::controlLoop()
       updatecommandVelocity(LINEAR_VELOCITY, 0.0);
       turtlebot3_state_num = GET_TB3_DIRECTION;
       break;
-
+    
     case TB3_RIGHT_TURN:
       if (fabs(prev_tb3_pose_ - tb3_pose_) >= escape_range_)
         turtlebot3_state_num = GET_TB3_DIRECTION;
       else
         updatecommandVelocity(0.0, -1 * ANGULAR_VELOCITY);
       break;
-
+    
     case TB3_LEFT_TURN:
       if (fabs(prev_tb3_pose_ - tb3_pose_) >= escape_range_)
         turtlebot3_state_num = GET_TB3_DIRECTION;
