@@ -43,8 +43,8 @@ bool Turtlebot3Drive::init()
 
   // initialize variables
   escape_range_       = 30.0 * DEG2RAD;
-  check_forward_dist_ = 0.2;
-  check_side_dist_    = 0.4;
+  check_forward_dist_ = 0.5;
+  check_side_dist_    = 0.55; //0.5
 
 
   tb3_pose_ = 0.0;
@@ -121,12 +121,13 @@ bool Turtlebot3Drive::controlLoop()
       //   FLAG = false;
       // }
       // updatecommandVelocity(0.0, -1 * ANGULAR_VELOCITY)
-    
-    if(scan_data_[CENTER] >check_forward_dist_  && scan_data_[RIGHT_270] > check_side_dist_ && scan_data_[RIGHT_300] > check_side_dist_ && scan_data_[RIGHT_285]> check_side_dist_){
-      prev_tb3_pose_ = tb3_pose_;
-      turtlebot3_state_num = TB3_RIGHT_TURN;
+    //  \|
+    //if(scan_data_[CENTER] >check_forward_dist_ && scan_data_[RIGHT_270] > check_side_dist_ && scan_data_[RIGHT_300] > check_side_dist_ && scan_data_[RIGHT_285]> check_side_dist_ && scan_data_[RIGHT_330] > check_side_dist_){
+    if(scan_data_[CENTER] >check_forward_dist_ && scan_data_[RIGHT_300] > check_side_dist_ && scan_data_[RIGHT_285]> check_side_dist_ && scan_data_[RIGHT_330] > check_side_dist_){    
+        prev_tb3_pose_ = tb3_pose_;
+        turtlebot3_state_num = TB3_RIGHT_TURN;
     }
-    else if(scan_data_[CENTER]>check_forward_dist_){
+    else if(scan_data_[CENTER]>check_forward_dist_ ){
       prev_tb3_pose_ = tb3_pose_;
       turtlebot3_state_num = TB3_DRIVE_FORWARD;
     }
