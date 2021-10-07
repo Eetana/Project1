@@ -43,8 +43,8 @@ bool Turtlebot3Drive::init()
 
   // initialize variables
   escape_range_       = 30.0 * DEG2RAD;
-  check_forward_dist_ = 0.7;
-  check_side_dist_    = 0.6;
+  check_forward_dist_ = 0.3;
+  check_side_dist_    = 0.2;
 
   tb3_pose_ = 0.0;
   prev_tb3_pose_ = 0.0;
@@ -69,13 +69,13 @@ void Turtlebot3Drive::odomMsgCallBack(const nav_msgs::Odometry::ConstPtr &msg)
 
 void Turtlebot3Drive::laserScanMsgCallBack(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
-  uint16_t scan_angle[3] = {0, 30, 330};
+  uint16_t scan_angle[8] = {0,45,90,135,180,225,270,315};
 
-  for (int num = 0; num < 3; num++)
+  for (int num = 0; num < 8; num++)
   {
     if (std::isinf(msg->ranges.at(scan_angle[num])))
     {
-      scan_data_[num] = msg->range_max;
+      scan_data_[num] = Max_detected;
     }
     else
     {
@@ -100,32 +100,52 @@ void Turtlebot3Drive::updatecommandVelocity(double linear, double angular)
 bool Turtlebot3Drive::controlLoop()
 {
   static uint8_t turtlebot3_state_num = 0;
-
+  static uint8_t flag = true;
   switch(turtlebot3_state_num)
   {
     case GET_TB3_DIRECTION:
-      if (scan_data_[CENTER] > check_forward_dist_)
+      
+      // No wall forward
+      // if (scan_data_[CENTER] > check_forward_dist_ && scan_data_[RIGHT_315] > check_side_dist_ && scan_data_[RIGHT_270]>check_side_dist_&& scan_data_[RIGHT_225]>check_side_dist_){
+      //   prev_tb3_pose_ = tb3_pose_;
+      //   turtlebot3_state_num = TB3_RIGHT_TURN;
+      // }
+      // // Have wall forward
+      // else if(scan_data_[CENTER] < check_forward_dist_ || scan_data_[RIGHT_315] < check_side_dist_){
+      //   prev_tb3_pose_ = tb3_pose_;
+      //   turtlebot3_state_num = TB3_LEFT_TURN;
+      // }
+      // else if(scan_data_[CENTER] > check_forward_dist_){
+      //   prev_tb3_pose_ = tb3_pose_;
+      //   turtlebot3_state_num = TB3_DRIVE_FORWARD;
+      // }
+      // break;
+      // nothing forward
+      if (scan_data_[CENTER] > check_forward_dist_)  
       {
-        if (scan_data_[LEFT] < check_side_dist_)
+        // find a wall at left, turn right
+        if (scan_data_[LEFT_60] < check_side_dist_ || scan_data_[LEFT_120] < check_side_dist_)
         {
           prev_tb3_pose_ = tb3_pose_;
           turtlebot3_state_num = TB3_RIGHT_TURN;
         }
-        else if (scan_data_[RIGHT] < check_side_dist_)
+        // find a wall at right, go forward
+        else if (scan_data_[RIGHT_240] < check_side_dist_ || scan_data_[RIGHT_300] < check_side_dist_ )
         {
           prev_tb3_pose_ = tb3_pose_;
           turtlebot3_state_num = TB3_LEFT_TURN;
         }
         else
         {
+          // no any wall find, go forward
           turtlebot3_state_num = TB3_DRIVE_FORWARD;
         }
       }
-
+      // if have a wall forward, turn right
       if (scan_data_[CENTER] < check_forward_dist_)
       {
         prev_tb3_pose_ = tb3_pose_;
-        turtlebot3_state_num = TB3_RIGHT_TURN;
+        turtlebot3_state_num = TB3_LEFT_TURN;
       }
       break;
 

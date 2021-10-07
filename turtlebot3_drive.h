@@ -14,6 +14,22 @@
 * limitations under the License.
 *******************************************************************************/
 
+/*******************************************************************************
+* Copyright 2016 ROBOTIS CO., LTD.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*******************************************************************************/
+
 /* Authors: Taehun Lim (Darby) */
 
 #ifndef TURTLEBOT3_DRIVE_H_
@@ -27,13 +43,19 @@
 
 #define DEG2RAD (M_PI / 180.0)
 #define RAD2DEG (180.0 / M_PI)
+#define Max_detected 20
 
-#define CENTER 0
-#define LEFT   1
-#define RIGHT  2
+#define CENTER    0
+#define LEFT_45   1
+#define LEFT_90   2
+#define LEFT_135  3
+#define LEFT_180  4
+#define RIGHT_225  5
+#define RIGHT_270  6
+#define RIGHT_315  7
 
-#define LINEAR_VELOCITY  0.3
-#define ANGULAR_VELOCITY 1.5
+#define LINEAR_VELOCITY  0.2
+#define ANGULAR_VELOCITY 1.0
 
 #define GET_TB3_DIRECTION 0
 #define TB3_DRIVE_FORWARD 1
@@ -69,7 +91,7 @@ class Turtlebot3Drive
   double check_forward_dist_;
   double check_side_dist_;
 
-  double scan_data_[3] = {0.0, 0.0, 0.0};
+  double scan_data_[13] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
   double tb3_pose_;
   double prev_tb3_pose_;
