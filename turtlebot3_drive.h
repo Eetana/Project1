@@ -46,16 +46,22 @@
 #define Max_detected 20
 
 #define CENTER    0
-#define LEFT_45   1
-#define LEFT_90   2
-#define LEFT_135  3
-#define LEFT_180  4
-#define RIGHT_225  5
-#define RIGHT_270  6
-#define RIGHT_315  7
+#define LEFT_15   1
+#define LEFT_30   2
+#define LEFT_45  3
+#define LEFT_60  4
+#define LEFT_75  5
+#define LEFT_90  6
+#define FOR_BACK 7
+#define RIGHT_270  8
+#define RIGHT_285  9
+#define RIGHT_300  10
+#define RIGHT_315  11
+#define RIGHT_330  12
+#define RIGHT_345  13
 
-#define LINEAR_VELOCITY  0.2
-#define ANGULAR_VELOCITY 1.0
+#define LINEAR_VELOCITY  0.1
+#define ANGULAR_VELOCITY 1.3
 
 #define GET_TB3_DIRECTION 0
 #define TB3_DRIVE_FORWARD 1
@@ -90,6 +96,7 @@ class Turtlebot3Drive
   double escape_range_;
   double check_forward_dist_;
   double check_side_dist_;
+
 
   double scan_data_[13] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
