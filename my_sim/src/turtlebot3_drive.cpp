@@ -1,36 +1,23 @@
-/*******************************************************************************
-* Copyright 2016 ROBOTIS CO., LTD.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*******************************************************************************/
-
-/* Authors: Taehun Lim (Darby) */
+// The create a wall follower by right side by control a turtlebot
+// Turtlebot should always follow the right side wall to move and all would be move automatic
 
 #include "turtlebot3_gazebo/turtlebot3_drive.h"
 
+// Constructor run when the class be called
 Turtlebot3::Turtlebot3()
   : nh_priv_("~")
 {
   //Init gazebo ros turtlebot3 node
-  ROS_INFO("TurtleBot3 Simulation Node Init");
-  auto ret = init();
+  ROS_INFO("TurtleBot3 Simulation Node Init");	// First write some initial message.
+  auto ret = init();				//Call initial function to give variables initial value.
   ROS_ASSERT(ret);
 }
 
+// Destructor run when class end
 Turtlebot3::~Turtlebot3()
 {
-  updatecommandVelocity(0.0, 0.0);
-  ros::shutdown();
+  updatecommandVelocity(0.0, 0.0);  		// Initial the velocity and turning angular
+  ros::shutdown();				// shutdown the ros
 }
 
 /*******************************************************************************
@@ -38,7 +25,7 @@ Turtlebot3::~Turtlebot3()
 *******************************************************************************/
 void CLaser::initLaser(ros::NodeHandle *nh_){
   //Laser subscribe 
-  laser_scan_sub_  = nh_->subscribe("scan", 10, &CLaser::laserScanMsgCallBack, this);
+  laser_scan_sub_  = nh_->subscribe("scan", 10, &CLaser::laserScanMsgCallBack, this); // Record the value from laser scan and call function laserScanMsgCallBack
 }
 
 void COdom::initOdom(ros::NodeHandle *nh_){
@@ -55,9 +42,9 @@ bool Turtlebot3::init()
   std::string cmd_vel_topic_name = nh_.param<std::string>("cmd_vel_topic_name", "");
 
   // initialize variables
-  escape_range_       = 30.0 * DEG2RAD;
-  check_forward_dist_ = 0.5;
-  check_side_dist_    = 0.55; //0.5
+  escape_range_       = 30.0 * DEG2RAD;		// Set up turning angle
+  check_forward_dist_ = 0.5;			// Set up check forward distance
+  check_side_dist_    = 0.55; //0.5		// Set up check side distance
 
   // initialize publishers
   cmd_vel_pub_   = nh_.advertise<geometry_msgs::Twist>(cmd_vel_topic_name, 10);
@@ -79,14 +66,17 @@ void COdom::odomMsgCallBack(const nav_msgs::Odometry::ConstPtr &msg)
 	tb3_pose_ = atan2(siny, cosy);
 }
 
+// Laser call back function which will communicate to laser sensor
 void CLaser::laserScanMsgCallBack(const sensor_msgs::LaserScan::ConstPtr &msg)
 {
+  // The laser scan range including 360 degree but we only want to check situations of some direction
+  // There are 14 direction we use to check distance.
   uint16_t scan_angle[14] = {0,15,30,45,60,75,90,180,270,285,300,315,330,345};
 
   //Scan location at different angles
   for (int num = 0; num < 14; num++)
   {
-    //If data is infinity, then let it equal max range
+    //If data is infinity or out of detect range, then let it equal max range
     if (std::isinf(msg->ranges.at(scan_angle[num])))
     {
       scan_data_[num] = msg->range_max;
@@ -94,18 +84,19 @@ void CLaser::laserScanMsgCallBack(const sensor_msgs::LaserScan::ConstPtr &msg)
     //Store data
     else
     {
-      scan_data_[num] = msg->ranges.at(scan_angle[num]);
+      scan_data_[num] = msg->ranges.at(scan_angle[num]); // if detected distance then return the distance to scan_data_
     }
   }
 }
 
+// The give linear velocity and angular to directly control the bot 
 void Turtlebot3::updatecommandVelocity(double linear, double angular)
 {
   geometry_msgs::Twist cmd_vel;
 
   //Update linear and angular vel
-  cmd_vel.linear.x  = linear;
-  cmd_vel.angular.z = angular;
+  cmd_vel.linear.x  = linear;	 	// Robot recive the moving speed
+  cmd_vel.angular.z = angular;		// Robot recive the turning angle		
 
   cmd_vel_pub_.publish(cmd_vel);
 }
@@ -116,13 +107,14 @@ void Turtlebot3::updatecommandVelocity(double linear, double angular)
 bool Turtlebot3::controlLoop()
 {
   //Initialise the turtlebot's state
-  static uint8_t turtlebot3_state_num = 0;
+  static uint8_t turtlebot3_state_num = 0;  	// initial the state number to 0, it only run once.
   //static bool FLAG =true;
   switch(turtlebot3_state_num)
   {
     //Determine which direction robot needs to move
     case GET_TB3_DIRECTION:
-      //Check if the robot needs to make a right turn
+      // Check if the robot needs to make a right turn
+      // Forward has no wall, right side forward have no wall then turn right
       if(Laser.scan_data_[CENTER] >check_forward_dist_ && Laser.scan_data_[RIGHT_300] > check_side_dist_ && Laser.scan_data_[RIGHT_285]> check_side_dist_ && Laser.scan_data_[RIGHT_330] > check_side_dist_)     {  
         //Update prev pose  
         Odom.prev_tb3_pose_ = Odom.tb3_pose_;
@@ -130,6 +122,7 @@ bool Turtlebot3::controlLoop()
         turtlebot3_state_num = TB3_RIGHT_TURN;
       }
       //Check if the robot needs to go forward
+      // if don't need to turn right, but the forward is empty, so robot will go forward
       else if(Laser.scan_data_[CENTER]>check_forward_dist_ ){
         //Update prev pose  
         Odom.prev_tb3_pose_ = Odom.tb3_pose_;
@@ -137,6 +130,8 @@ bool Turtlebot3::controlLoop()
         turtlebot3_state_num = TB3_DRIVE_FORWARD;
       }
       //Check if the robot needs to make a left turn
+      // if laser detected forward has a wall, it will turn left
+      // if robot to close to the right side wall, it will turn left
       else if (Laser.scan_data_[CENTER] < check_forward_dist_ || Laser.scan_data_[RIGHT_270]<check_side_dist_ || Laser.scan_data_[RIGHT_345]<check_side_dist_ || Laser.scan_data_[RIGHT_300]<check_side_dist_)  {
         //Update prev pose  
         Odom.prev_tb3_pose_ = Odom.tb3_pose_;
@@ -183,13 +178,13 @@ int main(int argc, char* argv[])
   ros::init(argc, argv, "turtlebot3_drive");
   Turtlebot3 turtlebot3_drive;
 
-  ros::Rate loop_rate(125);
-
+  ros::Rate loop_rate(125);	// fresh frequency
+// into a infinite loop or call interrupt.
   while (ros::ok())
   {
-    turtlebot3_drive.controlLoop();
-    ros::spinOnce();
-    loop_rate.sleep();
+    turtlebot3_drive.controlLoop();	// Run control function
+    ros::spinOnce();			// Message call back
+    loop_rate.sleep();			// Use together with ros::Rate loop_rate(125)
   }
 
   return 0;
