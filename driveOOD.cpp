@@ -18,6 +18,36 @@
 
 #include "turtlebot3_gazebo/turtlebot3_drive.h"
 
+CLaser::CLaser()
+{
+  scan_data_[13] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+}
+
+CLaser::~CLaser()
+{}
+
+CLaser::init(ros::NodeHandle* nh_)
+{
+  laser_scan_sub_  = nh_->subscribe("scan", 10, &CLaser::laserCallBack, this);
+}
+
+void CLaser::laserCallBack(const sensor_msgs::LaserScan::ConstPtr &msg)
+{
+  uint16_t scan_angle[14] = {0,15,30,45,60,75,90,180,270,285,300,315,330,345};
+
+  for (int num = 0; num < 14; num++)
+  {
+    if (std::isinf(msg->ranges.at(scan_angle[num])))
+    {
+      scan_data_[num] = msg->range_max;
+    }
+    else
+    {
+      scan_data_[num] = msg->ranges.at(scan_angle[num]);
+    }
+  }
+}
+
 Turtlebot3Drive::Turtlebot3Drive()
   : nh_priv_("~")
 {
@@ -46,6 +76,7 @@ bool Turtlebot3Drive::init()
   check_forward_dist_ = 0.5;
   check_side_dist_    = 0.55; //0.5
 
+  Laser.init(&nh_);
 
   tb3_pose_ = 0.0;
   prev_tb3_pose_ = 0.0;
@@ -54,7 +85,6 @@ bool Turtlebot3Drive::init()
   cmd_vel_pub_   = nh_.advertise<geometry_msgs::Twist>(cmd_vel_topic_name, 10);
 
   // initialize subscribers
-  laser_scan_sub_  = nh_.subscribe("scan", 10, &Turtlebot3Drive::laserScanMsgCallBack, this);
   odom_sub_ = nh_.subscribe("odom", 10, &Turtlebot3Drive::odomMsgCallBack, this);
 
   return true;
@@ -66,23 +96,6 @@ void Turtlebot3Drive::odomMsgCallBack(const nav_msgs::Odometry::ConstPtr &msg)
 	double cosy = 1.0 - 2.0 * (msg->pose.pose.orientation.y * msg->pose.pose.orientation.y + msg->pose.pose.orientation.z * msg->pose.pose.orientation.z);  
 
 	tb3_pose_ = atan2(siny, cosy);
-}
-
-void Turtlebot3Drive::laserScanMsgCallBack(const sensor_msgs::LaserScan::ConstPtr &msg)
-{
-  uint16_t scan_angle[14] = {0,15,30,45,60,75,90,180,270,285,300,315,330,345};
-
-  for (int num = 0; num < 14; num++)
-  {
-    if (std::isinf(msg->ranges.at(scan_angle[num])))
-    {
-      scan_data_[num] = msg->range_max;
-    }
-    else
-    {
-      scan_data_[num] = msg->ranges.at(scan_angle[num]);
-    }
-  }
 }
 
 void Turtlebot3Drive::updatecommandVelocity(double linear, double angular)
@@ -107,31 +120,16 @@ bool Turtlebot3Drive::controlLoop()
     case GET_TB3_DIRECTION:
 
   // create a function which could make the robot face to the closet wall.
-      // if(scan_data_[RIGHT_270] > 5.0 && scan_data_[CENTER] > 5.0 ){
-      //   prev_tb3_pose_ = tb3_pose_;
-      //   turtlebot3_state_num = TB3_LEFT_TURN;
-      // }
-      // if(scan_data_[CENTER] > scan_data_[RIGHT_345]){
-      //   prev_tb3_pose_ = tb3_pose_;
-      //   turtlebot3_state_num = TB3_RIGHT_TURN;
-      // }
-      // else if(scan_data_[CENTER] < scan_data_[LEFT_45] || scan_data_[CENTER] < scan_data_[RIGHT_345]){
-      //   prev_tb3_pose_ = tb3_pose_;
-      //   turtlebot3_state_num = TB3_DRIVE_FORWARD;
-      //   FLAG = false;
-      // }
-      // updatecommandVelocity(0.0, -1 * ANGULAR_VELOCITY)
-    //  \|
     //if(scan_data_[CENTER] >check_forward_dist_ && scan_data_[RIGHT_270] > check_side_dist_ && scan_data_[RIGHT_300] > check_side_dist_ && scan_data_[RIGHT_285]> check_side_dist_ && scan_data_[RIGHT_330] > check_side_dist_){
-    if(scan_data_[CENTER] >check_forward_dist_ && scan_data_[RIGHT_300] > check_side_dist_ && scan_data_[RIGHT_285]> check_side_dist_ && scan_data_[RIGHT_330] > check_side_dist_){    
+    if(Laser.scan_data_[CENTER] >check_forward_dist_ && Laser.scan_data_[RIGHT_300] > check_side_dist_ && Laser.scan_data_[RIGHT_285]> check_side_dist_ && Laser.scan_data_[RIGHT_330] > check_side_dist_){    
         prev_tb3_pose_ = tb3_pose_;
         turtlebot3_state_num = TB3_RIGHT_TURN;
     }
-    else if(scan_data_[CENTER]>check_forward_dist_ ){
+    else if(Laser.scan_data_[CENTER]>check_forward_dist_ ){
       prev_tb3_pose_ = tb3_pose_;
       turtlebot3_state_num = TB3_DRIVE_FORWARD;
     }
-    else if (scan_data_[CENTER] < check_forward_dist_ || scan_data_[RIGHT_270]<check_side_dist_ || scan_data_[RIGHT_345]<check_side_dist_ || scan_data_[RIGHT_300]<check_side_dist_){
+    else if (Laser.scan_data_[CENTER] < check_forward_dist_ || Laser.scan_data_[RIGHT_270]<check_side_dist_ || Laser.scan_data_[RIGHT_345]<check_side_dist_ || Laser.scan_data_[RIGHT_300]<check_side_dist_){
       prev_tb3_pose_ = tb3_pose_;
       turtlebot3_state_num = TB3_LEFT_TURN;
     }

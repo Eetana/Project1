@@ -68,6 +68,28 @@
 #define TB3_RIGHT_TURN    2
 #define TB3_LEFT_TURN     3
 
+
+// class Sensor
+// {
+//   public:
+
+//   private: 
+
+// }
+
+class CLaser
+{
+  public:
+    CLaser();
+    ~CLaser();
+    void init(ros::NodeHandle* nh_);
+    void laserCallBack(const sensor_msgs::LaserScan::ConstPtr &msg);
+    double scan_data_[13];
+    
+  private:
+    ros::Subscriber laser_scan_sub_;
+};
+
 class Turtlebot3Drive
 {
  public:
@@ -89,23 +111,19 @@ class Turtlebot3Drive
   ros::Publisher cmd_vel_pub_;
 
   // ROS Topic Subscribers
-  ros::Subscriber laser_scan_sub_;
   ros::Subscriber odom_sub_;
 
   // Variables
   double escape_range_;
   double check_forward_dist_;
   double check_side_dist_;
-
-
-  double scan_data_[13] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-
   double tb3_pose_;
   double prev_tb3_pose_;
+  CLaser Laser;
+  Action A;
 
   // Function prototypes
   void updatecommandVelocity(double linear, double angular);
-  void laserScanMsgCallBack(const sensor_msgs::LaserScan::ConstPtr &msg);
   void odomMsgCallBack(const nav_msgs::Odometry::ConstPtr &msg);
 };
 #endif // TURTLEBOT3_DRIVE_H_
